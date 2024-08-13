@@ -1,34 +1,37 @@
-trigger:
-- main  
+name: Build .NET 8.0 Application
 
-pool:
-  vmImage: 'ubuntu-latest'  
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
-- job: Build
-  displayName: 'Build .NET 8.0 Application'
-  steps:
-  - task: UseDotNet@2
-    inputs:
-      packageType: 'sdk'
-      version: '8.0.x'  # Specify the .NET SDK version you need
-      installationPath: $(Agent.ToolsDirectory)/dotnet
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-  - checkout: self  # Check out the code from the repository
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'  # Specify the .NET SDK version you need
 
-  - script: dotnet restore
-    displayName: 'Restore dependencies'
+    - name: Restore dependencies
+      run: dotnet restore
 
-  - script: dotnet build --no-restore --configuration Release
-    displayName: 'Build project'
+    - name: Build project
+      run: dotnet build --no-restore --configuration Release
 
-  - script: dotnet test --no-build --verbosity normal
-    displayName: 'Run tests'
+    - name: Run tests
+      run: dotnet test --no-build --verbosity normal
 
-  - script: dotnet publish --configuration Release --output $(Build.ArtifactStagingDirectory)/publish
-    displayName: 'Publish project'
+    - name: Publish project
+      run: dotnet publish --configuration Release --output ./publish
 
-  - task: PublishPipelineArtifact@1
-    inputs:
-      targetPath: '$(Build.ArtifactStagingDirectory)/publish'
-      artifact: 'drop'
-    displayName: 'Publish build artifact'
+    - name: Upload build artifact
+      uses: actions/upload
